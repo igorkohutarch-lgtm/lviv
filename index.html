@@ -62,8 +62,6 @@
             border-radius: 32px;
             border: 1px solid rgba(255, 255, 255, 0.4);
             box-sizing: border-box;
-            
-            /* Жорсткий рівномірний відступ 7px з усіх сторін */
             padding: 7px; 
             touch-action: none;
         }
@@ -72,7 +70,6 @@
             transform: translate3d(-50%, -50%, 0);
         }
 
-        /* Ручка тепер позиціонується всередині верхньої 7px рамки та не заважає фотографії */
         .drag-handle {
             width: 36px;
             height: 4px;
@@ -98,8 +95,6 @@
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
             cursor: pointer;
             touch-action: none;
-            
-            /* Жодних зовнішніх відступів зверху, рамка формується виключно за рахунок padding контейнера */
             margin-top: 0; 
             box-sizing: border-box;
         }
@@ -283,7 +278,7 @@
             will-change: opacity;
         }
         .qr-content {
-            background: rgba(255, 255, 255, 0.55); 
+            background: rgba(255, 255, 255, 0.95); 
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             padding: 24px;
@@ -425,7 +420,7 @@
             <h3>Твій купон</h3>
             <div id="qr-code-space"></div>
             <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">Покажи цей код на касі закладу</p>
-            <button class="qr-close" onclick="closeQr()">Готово</button>
+            <button class="qr-close" id="qr-close-btn">Готово</button>
         </div>
     </div>
 
@@ -608,6 +603,60 @@
             currentActiveItem = null;
         }
 
+        function loadChat(chatId) {
+            const messagesList = document.getElementById('chat-messages');
+            messagesList.innerHTML = '';
+            currentChatRef = ref(db, `chats/${chatId}`);
+            
+            onChildAdded(currentChatRef, (snapshot) => {
+                const data = snapshot.val();
+                const li = document.createElement('li');
+                
+                if (data.sender === myName) {
+                    li.className = 'msg-me';
+                    li.innerText = data.text;
+                } else {
+                    li.className = 'msg-other';
+                    li.innerHTML = `<span class="msg-user-name">${data.sender}</span>${data.text}`;
+                }
+                
+                messagesList.appendChild(li);
+                messagesList.scrollTop = messagesList.scrollHeight;
+            });
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-msg-input');
+            const text = input.value.trim();
+            if (!text || !currentActiveItem) return;
+            
+            const chatRef = ref(db, `chats/${currentActiveItem.id}`);
+            push(chatRef, {
+                sender: myName,
+                text: text,
+                timestamp: Date.now()
+            });
+            input.value = '';
+        }
+
+        document.getElementById('chat-send-btn').addEventListener('click', sendChatMessage);
+        document.getElementById('chat-msg-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+
+        document.getElementById('prof-btn').addEventListener('click', () => {
+            if (!currentActiveItem || currentActiveItem.type !== 'place') return;
+            const qrSpace = document.getElementById('qr-code-space');
+            const couponData = encodeURIComponent(`COUPON-${currentActiveItem.id}-${Date.now()}`);
+            qrSpace.innerHTML = `<img src="https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=${couponData}&choe=UTF-8" alt="QR Code">`;
+            document.getElementById('qr-modal').style.display = 'flex';
+        });
+
+        window.closeQr = function() {
+            document.getElementById('qr-modal').style.display = 'none';
+        }
+        document.getElementById('qr-close-btn').addEventListener('click', window.closeQr);
+
         document.getElementById('prof-img').addEventListener('click', () => {
             if (!currentActiveItem) return;
             activePhotoIndex = 0;
@@ -685,13 +734,10 @@
             galCurrX = galCurrY = 0;
         }, { passive: true });
 
-
-        // ОБРОБКА ЖЕСТУ СВАЙПУ КАРТКИ ВГОРУ ТА ВНИЗ
         const sidebar = document.getElementById('profile-sidebar');
         let startSidebarY = 0, currSidebarY = 0, isSidebarSwiping = false;
 
         sidebar.addEventListener('touchstart', (e) => {
-            // Скасовуємо свайп, якщо він почався на внутрішніх інтерактивних областях
             if (e.target.closest('#chat-messages') || e.target.closest('.chat-input-row') || e.target.closest('.action-btn') || e.target.closest('.info-scroll-area')) {
                 return;
             }
@@ -703,9 +749,9 @@
         sidebar.addEventListener('touchmove', (e) => {
             if (!isSidebarSwiping) return;
             currSidebarY = e.touches[0].clientY - startSidebarY;
-            
-            // Завдяки формулі зсуву translate3d(-50%, calc(-50% + Y), 0) картка реагує на тягнення як вниз (+), так і вгору (-)
-            sidebar.style.transform = `translate3d(-50%, calc(-50% + ${currSidebarY}px), 0)`;
+            if (currSidebarY > -30) { 
+                sidebar.style.transform = `translate3d(-50%, calc(-50% + ${currSidebarY}px), 0)`;
+            }
         }, { passive: true });
 
         sidebar.addEventListener('touchend', () => {
@@ -713,90 +759,13 @@
             isSidebarSwiping = false;
             sidebar.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
             
-            // Якщо потягнули вниз на 120px+ АБО вгору на 120px+ (менше -120), картка сховається
-            if (currSidebarY > 120) {
-                window.closeProfile(); // стандартно вниз
-            } else if (currSidebarY < -120) {
-                // Плавне повне ховання вгору за межі екрану
-                sidebar.style.transform = 'translate3d(-50%, -150vh, 0)';
-                setTimeout(() => {
-                    window.closeProfile();
-                }, 300);
+            if (currSidebarY > 140) {
+                window.closeProfile();
             } else {
                 sidebar.style.transform = 'translate3d(-50%, -50%, 0)';
             }
             currSidebarY = 0;
         }, { passive: true });
-
-
-        // ЧАТ З FIREBASE
-        function loadChat(itemId) {
-            const chatMessages = document.getElementById('chat-messages');
-            chatMessages.innerHTML = '';
-            currentChatRef = ref(db, `chats/${itemId}`);
-            
-            onChildAdded(currentChatRef, (snapshot) => {
-                const msg = snapshot.val();
-                const li = document.createElement('li');
-                if (msg.name === myName) {
-                    li.className = 'msg-me';
-                    li.innerHTML = `<span>${escapeHtml(msg.text)}</span>`;
-                } else {
-                    li.className = 'msg-other';
-                    li.innerHTML = `<span class="msg-user-name">${escapeHtml(msg.name)}</span><span>${escapeHtml(msg.text)}</span>`;
-                }
-                chatMessages.appendChild(li);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            });
-        }
-
-        function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        function sendChatMessage() {
-            const input = document.getElementById('chat-msg-input');
-            const text = input.value.trim();
-            if (!text || !currentActiveItem) return;
-
-            push(ref(db, `chats/${currentActiveItem.id}`), {
-                name: myName,
-                text: text,
-                timestamp: Date.now()
-            });
-            input.value = '';
-        }
-
-        document.getElementById('chat-send-btn').addEventListener('click', sendChatMessage);
-        document.getElementById('chat-msg-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendChatMessage();
-        });
-
-        // КУПОНИ & МОДАЛКИ
-        document.getElementById('prof-btn').addEventListener('click', () => {
-            if (!currentActiveItem || currentActiveItem.type !== 'place') return;
-            const qrSpace = document.getElementById('qr-code-space');
-            qrSpace.innerHTML = '';
-            
-            const qrImg = document.createElement('img');
-            const promoData = `lviv_promo_${currentActiveItem.id}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(promoData)}`;
-            qrImg.alt = "Купон";
-            qrSpace.appendChild(qrImg);
-
-            document.getElementById('qr-modal').style.display = 'flex';
-        });
-
-        window.closeQr = function() {
-            document.getElementById('qr-modal').style.display = 'none';
-        }
-
-        document.getElementById('gallery-modal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('gallery-modal')) window.closeGallery();
-        });
-        document.getElementById('qr-modal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('qr-modal')) window.closeQr();
-        });
     </script>
 </body>
 </html>
