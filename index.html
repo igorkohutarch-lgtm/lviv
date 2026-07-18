@@ -2,626 +2,629 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Моє Портфоліо & Профіль</title>
-    <!-- Підключення іконок Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Підключення бібліотеки для QR-коду -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Локатор & Чат з Купонами</title>
+    
+    <!-- Google Fonts & Leaflet CSS для карти -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #38bdf8;
-            --accent-hover: #0ea5e9;
+            --bg-primary: #121214;
+            --bg-secondary: #1a1a1e;
+            --bg-tertiary: #26262b;
+            --accent: #ff4757;
+            --accent-hover: #ff6b81;
+            --text-main: #f5f5f7;
+            --text-muted: #a0a0a5;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-color);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
             color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* --- ФІКСОВАНА КНОПКА-ІКОНКА ПРОФІЛЮ --- */
-        .profile-trigger {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: var(--card-bg);
-            border: 2px solid var(--accent);
-            cursor: pointer;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            z-index: 999; /* Поверх картки портфоліо */
+            height: 100vh;
         }
 
-        .profile-trigger:active {
-            transform: scale(0.92);
-        }
-
-        .profile-trigger img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .profile-trigger i {
-            color: var(--accent);
-            font-size: 1.3rem;
-        }
-
-        /* --- ВИТАГУВАЛЬНА ВКЛАДКА / МОДАЛКА ПРОФІЛЮ --- */
-        .profile-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(8px);
-            z-index: 2000; /* Поверх усього */
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .profile-modal.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .profile-card {
-            background: var(--card-bg);
-            width: 100%;
-            max-width: 450px;
-            border-radius: 0 0 24px 24px;
-            padding: 40px 20px 30px 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            text-align: center;
-            position: relative;
-            transform: translateY(-100%);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            border-bottom: 3px solid var(--accent);
-        }
-
-        .profile-modal.active .profile-card {
-            transform: translateY(0);
-        }
-
-        .close-profile {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.8rem;
-            cursor: pointer;
-            line-height: 1;
-        }
-
-        .profile-avatar {
-            width: 110px;
-            height: 110px;
-            border-radius: 50%;
-            border: 3px solid var(--accent);
-            margin: 0 auto 15px auto;
-            overflow: hidden;
-            background: #334155;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .profile-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .profile-avatar i {
-            font-size: 3.5rem;
-            color: var(--text-muted);
-        }
-
-        .profile-name {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .profile-bio {
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            margin-bottom: 25px;
-            padding: 0 15px;
-            line-height: 1.5;
-        }
-
-        .messenger-channels {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .messenger-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 24px;
-            border-radius: 12px;
-            text-decoration: none;
-            color: #fff;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: transform 0.2s, filter 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        .messenger-btn:active {
-            transform: scale(0.95);
-        }
-
-        .btn-tg { background-color: #0088cc; }
-        .btn-viber { background-color: #7360f2; }
-
-
-        /* --- ОСНОВНИЙ КОНТЕНТ (БЕЗ ЗМІН) --- */
-        .main-card {
-            background-color: var(--card-bg);
-            border-radius: 24px;
-            width: 100%;
-            max-width: 500px;
-            padding: 25px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            margin-top: 40px; /* Відступ від фіксованої іконки */
-        }
-
-        .gallery-container {
+        #app-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 4 / 3;
-            border-radius: 16px;
-            overflow: hidden;
-            background-color: #0f172a;
-            margin-bottom: 20px;
-            touch-action: pan-y;
+            height: 100vh;
         }
 
-        .gallery-track {
-            display: flex;
+        #map {
             width: 100%;
             height: 100%;
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 1;
         }
 
-        .gallery-slide {
-            min-width: 100%;
-            height: 100%;
-            position: relative;
-        }
-
-        .gallery-slide img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .nav-btn {
+        /* Компоненти профілю (Сайдбар) */
+        #profile-sidebar {
             position: absolute;
             top: 50%;
-            transform: translateY(-50%);
-            background: rgba(30, 41, 59, 0.7);
-            border: none;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
-            transition: background 0.2s;
-            z-index: 10;
-        }
-
-        .prev-btn { left: 10px; }
-        .next-btn { right: 10px; }
-
-        .indicators {
-            position: absolute;
-            bottom: 15px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate3d(-50%, -50%, 0);
+            width: 92%;
+            max-width: 440px;
+            height: 85vh;
+            background-color: var(--bg-secondary);
+            border-radius: 24px;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+        }
+
+        .drag-handle {
+            width: 100%;
+            height: 32px;
             display: flex;
-            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            background: var(--bg-secondary);
+            flex-shrink: 0;
             z-index: 10;
         }
 
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.4);
-            transition: all 0.2s;
-            cursor: pointer;
+        .drag-handle::before {
+            content: '';
+            width: 40px;
+            height: 5px;
+            background-color: var(--bg-tertiary);
+            border-radius: 3px;
         }
 
-        .dot.active {
-            background: var(--accent);
-            width: 20px;
-            border-radius: 4px;
-        }
-
-        .qr-section {
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px 20px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin-top: 10px;
+            gap: 20px;
         }
 
-        .qr-wrapper {
-            background: white;
-            padding: 12px;
-            border-radius: 16px;
-            display: inline-block;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .share-btn {
-            background-color: var(--accent);
-            color: #0f172a;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: background-color 0.2s, transform 0.1s;
-            width: 100%;
-            justify-content: center;
-        }
-
-        .share-btn:hover { background-color: var(--accent-hover); }
-        .share-btn:active { transform: scale(0.98); }
-
-        /* --- ЛАЙТБОКС ГАЛЕРЕЇ --- */
-        .lightbox {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(15, 23, 42, 0.95);
-            z-index: 2100;
+        .profile-header {
             display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .profile-title h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .profile-title p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .close-btn {
+            background: var(--bg-tertiary);
+            border: none;
+            color: var(--text-main);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Прев'ю Галереї */
+        .gallery-preview-wrapper {
+            width: 100%;
+            height: 120px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .gallery-preview-wrapper::-webkit-scrollbar { display: none; }
+
+        .img-thumb {
+            width: 120px;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+            cursor: pointer;
+            flex-shrink: 0;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .img-thumb:hover { border-color: var(--accent); }
+
+        /* Вікно повнорозмірної галереї */
+        #gallery-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(10, 10, 12, 0.95);
+            z-index: 200;
+            display: none;
             justify-content: center;
             align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            touch-action: none;
         }
 
-        .lightbox.active {
-            opacity: 1;
-            pointer-events: auto;
+        #gallery-img {
+            max-width: 90%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            will-change: transform;
         }
 
-        .lightbox-content {
-            max-width: 95%;
-            max-height: 85%;
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
+        /* Секція Чату всередині профілю */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            min-height: 250px;
+            overflow: hidden;
+        }
+
+        #chat-messages {
+            flex: 1;
+            list-style: none;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #chat-messages li {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.4;
+            word-break: break-word;
             position: relative;
         }
 
-        .lightbox.active .lightbox-content {
-            transform: scale(1);
+        .msg-me {
+            background-color: var(--accent);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
         }
 
-        .lightbox-img {
-            max-width: 100%;
-            max-height: 85vh;
-            border-radius: 8px;
-            object-fit: contain;
-            user-select: none;
-            pointer-events: none;
+        .msg-other {
+            background-color: var(--bg-tertiary);
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
         }
 
-        .lightbox-close {
-            position: absolute;
-            top: -40px;
-            right: 0;
+        .msg-user-name {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 2px;
+            opacity: 0.7;
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            gap: 8px;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-main);
+            padding: 0 14px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .chat-input-area button, .action-btn {
+            background: var(--accent);
             color: white;
-            font-size: 2rem;
-            cursor: pointer;
-            background: transparent;
             border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .chat-input-area button:hover, .action-btn:hover { background: var(--accent-hover); }
+
+        /* Модалка QR коду */
+        #qr-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 300;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .qr-card {
+            background: #fff;
+            color: #000;
+            padding: 24px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+        #qr-code-space img { display: block; margin: 16px auto; }
+
+        @media (max-width: 480px) {
+            #profile-sidebar {
+                top: auto; bottom: 0; left: 0; transform: translate3d(0, 100%, 0);
+                width: 100%; height: 88vh; border-radius: 24px 24px 0 0;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- ФІКСОВАНА ІКОНКА ПРОФІЛЮ ВГОРУ (ПРАВОРУЧ) -->
-    <button class="profile-trigger" id="profileTrigger" title="Мій профіль">
-        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop" alt="Аватар" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <i class="fa-solid fa-user" style="display: none;"></i>
-    </button>
+    <div id="app-container">
+        <!-- Мапа Leaflet -->
+        <div id="map"></div>
 
-    <!-- ВКЛАДКА ПРОФІЛЮ -->
-    <div class="profile-modal" id="profileModal">
-        <div class="profile-card" id="profileCard">
-            <button class="close-profile" id="closeProfile">&times;</button>
-            
-            <div class="profile-avatar">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop" alt="Фото профілю" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <i class="fa-solid fa-user" style="display: none;"></i>
-            </div>
-            
-            <h2 class="profile-name">Олександра</h2>
-            <p class="profile-bio">Привіт! Рада бачити вас у моєму портфоліо. Ви можете швидко написати мені або зателефонувати в один клік нижче 👇</p>
-            
-            <div class="messenger-channels">
-                <a href="https://t.me/username" target="_blank" class="messenger-btn btn-tg">
-                    <i class="fa-brands fa-telegram"></i> Telegram
-                </a>
-                <a href="viber://chat?number=380000000000" target="_blank" class="messenger-btn btn-viber">
-                    <i class="fa-brands fa-viber"></i> Viber
-                </a>
+        <!-- Сайдбар закладу/профілю -->
+        <div id="profile-sidebar">
+            <div class="drag-handle"></div>
+            <div class="sidebar-content">
+                <div class="profile-header">
+                    <div class="profile-title">
+                        <h2 id="prof-title">Назва локації</h2>
+                        <p id="prof-type">Категорія</p>
+                    </div>
+                    <button class="close-btn" onclick="closeProfile()">&times;</button>
+                </div>
+
+                <!-- Горизонтальна галерея -->
+                <div class="gallery-preview-wrapper" id="prof-gallery"></div>
+
+                <button class="action-btn" id="prof-btn">Отримати Купон</button>
+
+                <!-- Інтегрований чат -->
+                <div class="chat-container">
+                    <ol id="chat-messages"></ol>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-msg-input" placeholder="Напишіть повідомлення..." autocomplete="off">
+                        <button id="chat-send-btn">Надісл.</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ОСНОВНА КАРТКА -->
-    <main class="main-card">
-        <div class="gallery-container" id="galleryContainer">
-            <div class="gallery-track" id="galleryTrack">
-                <div class="gallery-slide">
-                    <img src="https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?q=80&w=800" alt="Пейзаж 1">
-                </div>
-                <div class="gallery-slide">
-                    <img src="https://images.unsplash.com/photo-1682687220063-4742bd7fd538?q=80&w=800" alt="Пейзаж 2">
-                </div>
-                <div class="gallery-slide">
-                    <img src="https://images.unsplash.com/photo-1682687220111-174154913059?q=80&w=800" alt="Пейзаж 3">
-                </div>
-            </div>
-            
-            <button class="nav-btn prev-btn" id="prevBtn" aria-label="Назад">
-                <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            <button class="nav-btn next-btn" id="nextBtn" aria-label="Вперед">
-                <i class="fa-solid fa-chevron-right"></i>
-            </button>
-
-            <div class="indicators" id="indicators"></div>
-        </div>
-
-        <div class="qr-section">
-            <div class="qr-wrapper">
-                <div id="qrcode"></div>
-            </div>
-            <button class="share-btn" id="shareBtn">
-                <i class="fa-solid fa-share-nodes"></i> Поділитися посиланням
-            </button>
-        </div>
-    </main>
-
-    <!-- ЛАЙТБОКС -->
-    <div class="lightbox" id="lightbox">
-        <div class="lightbox-content" id="lightboxContent">
-            <button class="lightbox-close" id="lightboxClose">&times;</button>
-            <img class="lightbox-img" id="lightboxImg" src="" alt="Збільшене фото">
+    <!-- Модалка купона (QR) -->
+    <div id="qr-modal">
+        <div class="qr-card">
+            <h3>Твій купон на знижку</h3>
+            <div id="qr-code-space"></div>
+            <button class="action-btn" id="qr-close-btn" style="width:100%;">Закрити</button>
         </div>
     </div>
 
-    <script>
-        // --- СКРИПТ ВКЛАДКИ ПРОФІЛЮ ---
-        const profileTrigger = document.getElementById('profileTrigger');
-        const profileModal = document.getElementById('profileModal');
-        const profileCard = document.getElementById('profileCard');
-        const closeProfile = document.getElementById('closeProfile');
+    <!-- Вікно повнорозмірної галереї -->
+    <div id="gallery-modal">
+        <img id="gallery-img" src="" alt="FullView">
+    </div>
 
-        function openProfileModal() {
-            profileModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
+    <!-- Підключення Leaflet API -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        function closeProfileModal() {
-            profileModal.classList.remove('active');
-            document.body.style.overflow = '';
-        }
+    <!-- Модулі Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        profileTrigger.addEventListener('click', openProfileModal);
-        closeProfile.addEventListener('click', closeProfileModal);
-        
-        profileModal.addEventListener('click', (e) => {
-            if (e.target === profileModal) closeProfileModal();
-        });
+        // КОНФІГУРАЦІЯ FIREBASE (Заміни на власні дані!)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
-        // --- ГАЛЕРЕЯ ТА СВАЙПИ ---
-        const track = document.getElementById('galleryTrack');
-        const slides = Array.from(track.children);
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const indicatorsContainer = document.getElementById('indicators');
-        
-        let currentIndex = 0;
-        let startX = 0;
-        let currentX = 0;
-        let isDragging = false;
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-        slides.forEach((_, idx) => {
-            const dot = document.createElement('div');
-            dot.classList.add('dot');
-            if(idx === 0) dot.classList.add('active');
-            dot.addEventListener('click', () => updateGallery(idx));
-            indicatorsContainer.appendChild(dot);
-        });
-        const dots = Array.from(indicatorsContainer.children);
+        // Тимчасове ім'я користувача
+        const myName = "Гість_" + Math.floor(Math.random() * 1000);
 
-        function updateGallery(index) {
-            currentIndex = index;
-            track.style.transform = `translateX(-${currentIndex * 100}%)`;
-            dots.forEach((dot, idx) => {
-                dot.classList.toggle('active', idx === currentIndex);
+        // Базові фейкові дані місць (для прикладу на карті)
+        const places = [
+            {
+                id: "place_1",
+                name: "Кав'ярня 'Латте Арт'",
+                type: "Кафе",
+                lat: 50.4501, lng: 30.5234,
+                photos: [
+                    "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400",
+                    "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400"
+                ]
+            },
+            {
+                id: "place_2",
+                name: "Ресторан 'Паста & Базилік'",
+                type: "Ресторан",
+                lat: 50.4545, lng: 30.5280,
+                photos: [
+                    "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400",
+                    "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400"
+                ]
+            }
+        ];
+
+        // Глобальні змінні стану додатка
+        let map, currentActiveItem = null, currentChatRef = null;
+        let activePhotosArray = [], currentPhotoIndex = 0;
+
+        // Ініціалізація карти
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([50.4501, 30.5234], 14);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO'
+            }).addTo(map);
+
+            // Рендер маркерів
+            places.forEach(place => {
+                const marker = L.marker([place.lat, place.lng]).addTo(map);
+                marker.on('click', () => openProfile(place));
             });
         }
 
-        nextBtn.addEventListener('click', () => {
-            if (currentIndex < slides.length - 1) updateGallery(currentIndex + 1);
-            else updateGallery(0);
-        });
+        // Логіка Сайдбару профілю
+        function openProfile(place) {
+            currentActiveItem = { type: 'place', ...place };
+            document.getElementById('prof-title').innerText = place.name;
+            document.getElementById('prof-type').innerText = place.type;
+            
+            // Очищення та збирання галереї прев'ю
+            const gallBox = document.getElementById('prof-gallery');
+            gallBox.innerHTML = '';
+            activePhotosArray = place.photos || [];
 
-        prevBtn.addEventListener('click', () => {
-            if (currentIndex > 0) updateGallery(currentIndex - 1);
-            else updateGallery(slides.length - 1);
-        });
-
-        const container = document.getElementById('galleryContainer');
-        container.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isDragging = true;
-            track.style.transition = 'none';
-        }, { passive: true });
-
-        container.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            currentX = e.touches[0].clientX;
-            const diff = currentX - startX;
-            const offset = -currentIndex * container.offsetWidth + diff;
-            track.style.transform = `translateX(${offset}px)`;
-        }, { passive: true });
-
-        container.addEventListener('touchend', (e) => {
-            if (!isDragging) return;
-            isDragging = false;
-            track.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
-            const diff = currentX - startX;
-            if (Math.abs(diff) > 50) {
-                if (diff > 0 && currentIndex > 0) updateGallery(currentIndex - 1);
-                else if (diff < 0 && currentIndex < slides.length - 1) updateGallery(currentIndex + 1);
-                else updateGallery(currentIndex);
-            } else {
-                updateGallery(currentIndex);
-            }
-        });
-
-        // --- ЛАЙТБОКС СВАЙПИ ---
-        const lightbox = document.getElementById('lightbox');
-        const lightboxImg = document.getElementById('lightboxImg');
-        const lightboxClose = document.getElementById('lightboxClose');
-        const lightboxContent = document.getElementById('lightboxContent');
-
-        let lbStartY = 0;
-        let lbCurrentY = 0;
-        let lbIsDragging = false;
-
-        slides.forEach(slide => {
-            slide.querySelector('img').addEventListener('click', (e) => {
-                if (Math.abs(currentX - startX) < 5) {
-                    lightboxImg.src = e.target.src;
-                    lightbox.classList.add('active');
-                }
+            activePhotosArray.forEach((src, index) => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.className = 'img-thumb';
+                img.addEventListener('click', () => openGallery(index));
+                gallBox.appendChild(img);
             });
-        });
 
-        function closeLightbox() {
-            lightbox.classList.remove('active');
-            lightboxContent.style.transform = 'translateY(0) scale(1)';
+            // Налаштування чату
+            document.getElementById('chat-messages').innerHTML = '';
+            loadChat(place.id);
+
+            // Візуальне відкриття з анімацією
+            const sb = document.getElementById('profile-sidebar');
+            sb.style.display = 'flex';
+            setTimeout(() => {
+                if (window.innerWidth <= 480) {
+                    sb.style.transform = 'translate3d(0, 0, 0)';
+                } else {
+                    sb.style.transform = 'translate3d(-50%, -50%, 0)';
+                }
+                sb.style.opacity = '1';
+            }, 10);
         }
 
-        lightboxClose.addEventListener('click', closeLightbox);
-        lightbox.addEventListener('click', (e) => {
-            if(e.target === lightbox) closeLightbox();
-        });
-
-        lightbox.addEventListener('touchstart', (e) => {
-            lbStartY = e.touches[0].clientY;
-            lbIsDragging = true;
-            lightboxContent.style.transition = 'none';
-        }, { passive: true });
-
-        lightbox.addEventListener('touchmove', (e) => {
-            if (!lbIsDragging) return;
-            lbCurrentY = e.touches[0].clientY;
-            const diffY = lbCurrentY - lbStartY;
-            if (diffY > 0) {
-                lightboxContent.style.transform = `translateY(${diffY}px) scale(${1 - diffY/2000})`;
-            }
-        }, { passive: true });
-
-        lightbox.addEventListener('touchend', () => {
-            if (!lbIsDragging) return;
-            lbIsDragging = false;
-            lightboxContent.style.transition = 'transform 0.3s ease';
-            const diffY = lbCurrentY - lbStartY;
-            if (diffY > 150) closeLightbox();
-            else lightboxContent.style.transform = 'translateY(0) scale(1)';
-        });
-
-        // --- QR-КОД ТА ПОШИРЕННЯ ---
-        const currentUrl = window.location.href;
-        new QRCode(document.getElementById("qrcode"), {
-            text: currentUrl,
-            width: 140,
-            height: 140,
-            colorDark: "#0f172a",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-
-        document.getElementById('shareBtn').addEventListener('click', async () => {
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: 'Моє Портфоліо',
-                        url: currentUrl
-                    });
-                } catch (err) {
-                    console.log('Помилка поширення:', err);
-                }
+        window.closeProfile = function() {
+            const sb = document.getElementById('profile-sidebar');
+            if (window.innerWidth <= 480) {
+                sb.style.transform = 'translate3d(0, 100%, 0)';
             } else {
-                navigator.clipboard.writeText(currentUrl).then(() => {
-                    alert('Посилання скопійовано в буфер обміну!');
-                }).catch(() => {
-                    alert('Не вдалося скопіювати посилання.');
-                });
+                sb.style.transform = 'translate3d(-50%, 100%, 0)';
             }
+            sb.style.opacity = '0';
+            setTimeout(() => { sb.style.display = 'none'; }, 400);
+            currentActiveItem = null;
+            currentChatRef = null;
+        };
+
+        // Логіка Повноформатної галереї
+        function openGallery(index) {
+            currentPhotoIndex = index;
+            const modal = document.getElementById('gallery-modal');
+            const img = document.getElementById('gallery-img');
+            img.src = activePhotosArray[currentPhotoIndex];
+            img.style.transform = 'translate3d(0,0,0)';
+            modal.style.display = 'flex';
+        }
+
+        function changeGalleryPhoto(dir) {
+            currentPhotoIndex += dir;
+            if (currentPhotoIndex < 0) currentPhotoIndex = activePhotosArray.length - 1;
+            if (currentPhotoIndex >= activePhotosArray.length) currentPhotoIndex = 0;
+            
+            const img = document.getElementById('gallery-img');
+            img.style.transition = 'none';
+            img.style.transform = `translate3d(${dir * -40}px, 0, 0)`;
+            img.src = activePhotosArray[currentPhotoIndex];
+            
+            setTimeout(() => {
+                img.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+                img.style.transform = 'translate3d(0,0,0)';
+            }, 30);
+        }
+
+        function closeGallery() {
+            document.getElementById('gallery-modal').style.display = 'none';
+        }
+
+        // Тач-події свайпів для галереї (вліво/вправо — перемикання, вниз — закриття)
+        const galleryImgBox = document.getElementById('gallery-img');
+        let galStartX = 0, galStartY = 0, galCurrX = 0, galCurrY = 0, activeTouch = false;
+
+        galleryImgBox.addEventListener('touchstart', (e) => { 
+            if (e.touches.length > 1) return; 
+            galStartX = e.touches[0].clientX; 
+            galStartY = e.touches[0].clientY; 
+            activeTouch = true; 
+            galleryImgBox.style.transition = 'none'; 
+        }, { passive: true });
+
+        galleryImgBox.addEventListener('touchmove', (e) => {
+            if (!activeTouch) return;
+            galCurrX = e.touches[0].clientX - galStartX;
+            galCurrY = e.touches[0].clientY - galStartY;
+            
+            if (galCurrY > 0 && Math.abs(galCurrY) > Math.abs(galCurrX)) {
+                galleryImgBox.style.transform = `translate3d(0, ${galCurrY}px, 0)`;
+            } else {
+                galleryImgBox.style.transform = `translate3d(${galCurrX}px, 0, 0)`;
+            }
+        }, { passive: true });
+
+        galleryImgBox.addEventListener('touchend', () => {
+            if (!activeTouch) return;
+            activeTouch = false;
+            galleryImgBox.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+            
+            if (galCurrY > 150 && Math.abs(galCurrY) > Math.abs(galCurrX)) {
+                closeGallery();
+            } else if (galCurrX > 80) {
+                changeGalleryPhoto(-1);
+            } else if (galCurrX < -80) {
+                changeGalleryPhoto(1);
+            } else {
+                galleryImgBox.style.transform = 'translate3d(0,0,0)';
+            }
+            galStartX = 0; galStartY = 0; galCurrX = 0; galCurrY = 0;
         });
+
+        document.getElementById('gallery-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'gallery-modal') closeGallery();
+        });
+
+        // Drag-to-dismiss для сайдбару
+        const sidebar = document.getElementById('profile-sidebar');
+        const dragHandle = document.querySelector('.drag-handle');
+        let sbStartY = 0, sbCurrY = 0, isDraggingSb = false;
+
+        const startDrag = (clientY) => {
+            sbStartY = clientY;
+            isDraggingSb = true;
+            sidebar.style.transition = 'none';
+        };
+
+        const moveDrag = (clientY) => {
+            if (!isDraggingSb) return;
+            sbCurrY = clientY - sbStartY;
+            if (sbCurrY > 0) {
+                if (window.innerWidth <= 480) {
+                    sidebar.style.transform = `translate3d(0, ${sbCurrY}px, 0)`;
+                } else {
+                    sidebar.style.transform = `translate3d(-50%, calc(-50% + ${sbCurrY}px), 0)`;
+                }
+            }
+        };
+
+        const endDrag = () => {
+            if (!isDraggingSb) return;
+            isDraggingSb = false;
+            if (sbCurrY > 150) {
+                closeProfile();
+            } else {
+                sidebar.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease';
+                if (window.innerWidth <= 480) {
+                    sidebar.style.transform = 'translate3d(0, 0, 0)';
+                } else {
+                    sidebar.style.transform = 'translate3d(-50%, -50%, 0)';
+                }
+            }
+            sbStartY = 0; sbCurrY = 0;
+        };
+
+        dragHandle.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientY), { passive: true });
+        window.addEventListener('touchmove', (e) => moveDrag(e.touches[0].clientY), { passive: false });
+        window.addEventListener('touchend', endDrag);
+
+        dragHandle.addEventListener('mousedown', (e) => startDrag(e.clientY));
+        window.addEventListener('mousemove', (e) => moveDrag(e.clientY));
+        window.addEventListener('mouseup', endDrag);
+
+        // Логіка Купонів (QR)
+        document.getElementById('prof-btn').addEventListener('click', () => {
+            if (!currentActiveItem || currentActiveItem.type !== 'place') return;
+            const qrSpace = document.getElementById('qr-code-space');
+            qrSpace.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(currentActiveItem.name + '_coupon_2026')}" alt="QR Code">`;
+            document.getElementById('qr-modal').style.display = 'flex';
+        });
+
+        document.getElementById('qr-close-btn').addEventListener('click', () => {
+            document.getElementById('qr-modal').style.display = 'none';
+        });
+
+        // Логіка Firebase чату
+        function loadChat(chatId) {
+            currentChatRef = ref(db, `chats/${chatId}`);
+            const messagesOl = document.getElementById('chat-messages');
+            
+            onChildAdded(currentChatRef, (snapshot) => {
+                const data = snapshot.val();
+                const li = document.createElement('li');
+                const isMe = data.sender === myName;
+                
+                li.className = isMe ? 'msg-me' : 'msg-other';
+                li.innerHTML = `<span class="msg-user-name">${isMe ? 'Ви' : data.sender}</span>${escapeHTML(data.text)}`;
+                
+                messagesOl.appendChild(li);
+                messagesOl.scrollTop = messagesOl.scrollHeight;
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-msg-input');
+            const text = input.value.trim();
+            if (!text || !currentChatRef) return;
+
+            push(currentChatRef, {
+                sender: myName,
+                text: text,
+                timestamp: Date.now()
+            });
+            input.value = '';
+        }
+
+        document.getElementById('chat-send-btn').addEventListener('click', sendMessage);
+        document.getElementById('chat-msg-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Старт програми
+        window.onload = () => {
+            initMap();
+        };
     </script>
 </body>
 </html>
