@@ -327,6 +327,37 @@
         #chat-fab svg { stroke: var(--icon-color); }
         #chat-fab.active .bottom-icon-wrap { border-color: var(--accent-main); }
         #chat-fab.active svg { stroke: var(--accent-main); }
+
+        /* ---- Пішохідний маршрут: рожева підсвітка вибраних іконок + плашка з підказкою/відстанню ---- */
+        .route-ping-ring { animation: routePulse 1.3s ease-in-out infinite; pointer-events: none; }
+        @keyframes routePulse { 0%, 100% { stroke-opacity: 1; } 50% { stroke-opacity: 0.3; } }
+
+        #route-toast {
+            position: absolute;
+            top: 74px;
+            left: 50%;
+            transform: translate3d(-50%, -12px, 0);
+            z-index: 2600;
+            background: transparent;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-minimal);
+            border-radius: 20px;
+            padding: 9px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+            white-space: nowrap;
+            max-width: 86vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #route-toast.show { opacity: 1; transform: translate3d(-50%, 0, 0); }
+        body.dark-theme #route-toast { box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -354,6 +385,7 @@
         </button>
         
         <div id="map"></div>
+        <div id="route-toast"></div>
 
         <!-- Нижня панель: кнопка чату (всі мої бесіди) + перемикачі шарів карти -->
         <div id="bottom-bar">
@@ -552,7 +584,114 @@
             lastTap = now;
         }, { passive: false });
 
-        map.on('click', () => window.closeProfile());
+        map.on('click', () => {
+            window.closeProfile();
+            if (routeSelecting || routeLine) { cancelRouteSelection(); clearRouteLine(); }
+        });
+
+        // ---- Пішохідний маршрут: затисни свою іконку на карті, потім вибери іншу — прокладеться найкоротший пішохідний шлях (радіус дії 4 км) ----
+        const ROUTE_MAX_METERS = 4000;
+        let routeSelecting = false;
+        let routeLine = null;
+        let routeRings = [];
+
+        function haversineMeters(a, b) {
+            const R = 6371000;
+            const toRad = d => d * Math.PI / 180;
+            const dLat = toRad(b[0] - a[0]);
+            const dLon = toRad(b[1] - a[1]);
+            const lat1 = toRad(a[0]), lat2 = toRad(b[0]);
+            const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(h));
+        }
+
+        function showRouteInfo(text, autohideMs) {
+            const el = document.getElementById('route-toast');
+            el.innerText = text;
+            el.classList.add('show');
+            clearTimeout(showRouteInfo._t);
+            if (autohideMs) { showRouteInfo._t = setTimeout(() => el.classList.remove('show'), autohideMs); }
+        }
+        function hideRouteInfo() { document.getElementById('route-toast').classList.remove('show'); }
+
+        function addRoutePing(coords) {
+            const ring = L.circleMarker(coords, {
+                radius: 22, color: '#ff2d78', weight: 3, fillOpacity: 0, opacity: 0.95,
+                className: 'route-ping-ring', interactive: false
+            }).addTo(map);
+            routeRings.push(ring);
+            return ring;
+        }
+
+        function clearRouteRings() { routeRings.forEach(r => map.removeLayer(r)); routeRings = []; }
+        function clearRouteLine() { if (routeLine) { map.removeLayer(routeLine); routeLine = null; } clearRouteRings(); hideRouteInfo(); }
+
+        function cancelRouteSelection() {
+            if (!routeSelecting) return;
+            routeSelecting = false;
+            clearRouteRings();
+        }
+
+        // Затиск (long-press) власної іконки на карті вмикає режим вибору точки призначення
+        function attachLongPress(marker, onLongPress, duration) {
+            duration = duration || 550;
+            let timer = null;
+            const start = () => { timer = setTimeout(onLongPress, duration); };
+            const cancel = () => { clearTimeout(timer); };
+            marker.off('mousedown', marker._routeLpStart); marker.off('mouseup', marker._routeLpCancel); marker.off('mouseout', marker._routeLpCancel);
+            marker._routeLpStart = start; marker._routeLpCancel = cancel;
+            marker.on('mousedown', start);
+            marker.on('mouseup', cancel);
+            marker.on('mouseout', cancel);
+            const el = marker.getElement();
+            if (el && !el._routeLpBound) {
+                el._routeLpBound = true;
+                el.addEventListener('touchstart', start, { passive: true });
+                el.addEventListener('touchend', cancel);
+                el.addEventListener('touchmove', cancel);
+                el.addEventListener('touchcancel', cancel);
+            }
+        }
+
+        function enterRouteSelectionMode(fromCoords) {
+            clearRouteLine();
+            routeSelecting = true;
+            addRoutePing(fromCoords);
+            showRouteInfo('Виберіть іконку на карті, щоб прокласти маршрут 🚶');
+            if (navigator.vibrate) navigator.vibrate(15);
+        }
+
+        // Клік по будь-якій іншій іконці під час режиму вибору — прокладає найкоротший пішохідний маршрут (діє лише в радіусі 4 км)
+        async function buildWalkingRoute(fromCoords, toCoords) {
+            routeSelecting = false;
+            const dist = haversineMeters(fromCoords, toCoords);
+            if (dist > ROUTE_MAX_METERS) {
+                clearRouteRings();
+                showRouteInfo('Це занадто далеко — пішохідний маршрут працює лише в радіусі 4 км 🚫', 3000);
+                return;
+            }
+            addRoutePing(toCoords);
+            showRouteInfo('Прокладаю маршрут…');
+            try {
+                const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${fromCoords[1]},${fromCoords[0]};${toCoords[1]},${toCoords[0]}?overview=full&geometries=geojson`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data.code !== 'Ok' || !data.routes || !data.routes[0]) throw new Error('no route');
+                const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                if (routeLine) map.removeLayer(routeLine);
+                routeLine = L.polyline(coords, { color: '#ff2d78', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+                map.fitBounds(routeLine.getBounds(), { padding: [70, 90] });
+                const km = (data.routes[0].distance / 1000).toFixed(1);
+                const mins = Math.max(1, Math.round(data.routes[0].duration / 60));
+                showRouteInfo(`Пішки: ${km} км · ~${mins} хв`);
+            } catch (err) {
+                if (routeLine) map.removeLayer(routeLine);
+                routeLine = L.polyline([fromCoords, toCoords], { color: '#ff2d78', weight: 4, opacity: 0.85, dashArray: '6 8' }).addTo(map);
+                map.fitBounds(routeLine.getBounds(), { padding: [70, 90] });
+                showRouteInfo('Маршрут показано приблизно (немає з’єднання з сервісом маршрутів)');
+            }
+        }
+
         let myName = localStorage.getItem('chat_username') || prompt("Введіть ваше ім'я:", "Гість") || "Анонім";
         localStorage.setItem('chat_username', myName);
 
@@ -607,7 +746,11 @@
                 iconSize: [38, 38], iconAnchor: [19, 19]
             });
             const targetGroup = layerGroups[person.category] || layerGroups.people;
-            L.marker(person.coords, { icon: customIcon }).addTo(targetGroup).on('click', (e) => { L.DomEvent.stopPropagation(e); showSidebar(person); });
+            L.marker(person.coords, { icon: customIcon }).addTo(targetGroup).on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                if (routeSelecting) { buildWalkingRoute(myCoords, person.coords); return; }
+                showSidebar(person);
+            });
         });
 
         places.forEach(place => {
@@ -617,7 +760,11 @@
                 iconSize: [38, 38], iconAnchor: [19, 19]
             });
             const targetGroup = layerGroups[place.category] || layerGroups.food;
-            L.marker(place.coords, { icon: customIcon }).addTo(targetGroup).on('click', (e) => { L.DomEvent.stopPropagation(e); showSidebar(place); });
+            L.marker(place.coords, { icon: customIcon }).addTo(targetGroup).on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                if (routeSelecting) { buildWalkingRoute(myCoords, place.coords); return; }
+                showSidebar(place);
+            });
         });
 
         function showSidebar(item) {
@@ -968,8 +1115,13 @@
                 });
                 profileMarkers[id] = L.marker(p.coords, { icon: customIcon }).addTo(layerGroups.friends).on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
+                    if (routeSelecting) { if (id !== myId) buildWalkingRoute(myCoords, p.coords); return; }
                     if (id === myId) { showSidebar(getMyProfileItem()); } else { showSidebar(personObj); }
                 });
+
+                if (id === myId) {
+                    attachLongPress(profileMarkers[id], () => enterRouteSelectionMode(p.coords));
+                }
 
                 if (id === myId) { myProfile = { name: p.name, status: p.status, about: p.about, interests: p.interests, photos: p.photos || [] }; }
             });
