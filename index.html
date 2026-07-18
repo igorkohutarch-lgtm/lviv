@@ -358,6 +358,7 @@
         }
         #route-toast.show { opacity: 1; transform: translate3d(-50%, 0, 0); }
         body.dark-theme #route-toast { box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        #route-toast.warn { border-color: rgba(255, 45, 120, 0.5); color: #ff2d78; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -605,14 +606,15 @@
             return 2 * R * Math.asin(Math.sqrt(h));
         }
 
-        function showRouteInfo(text, autohideMs) {
+        function showRouteInfo(text, autohideMs, warn) {
             const el = document.getElementById('route-toast');
             el.innerText = text;
             el.classList.add('show');
+            el.classList.toggle('warn', !!warn);
             clearTimeout(showRouteInfo._t);
             if (autohideMs) { showRouteInfo._t = setTimeout(() => el.classList.remove('show'), autohideMs); }
         }
-        function hideRouteInfo() { document.getElementById('route-toast').classList.remove('show'); }
+        function hideRouteInfo() { document.getElementById('route-toast').classList.remove('show', 'warn'); }
 
         function addRoutePing(coords) {
             const ring = L.circleMarker(coords, {
@@ -643,14 +645,21 @@
             marker.on('mousedown', start);
             marker.on('mouseup', cancel);
             marker.on('mouseout', cancel);
-            const el = marker.getElement();
-            if (el && !el._routeLpBound) {
+            // Кожного разу, коли маркер (пере)додається на карту (напр. після вимкнення/увімкнення шару),
+            // Leaflet створює НОВИЙ DOM-елемент іконки — тож слухачі дотику треба прив'язувати наново щоразу.
+            const bindTouch = () => {
+                const el = marker.getElement();
+                if (!el || el._routeLpBound) return;
                 el._routeLpBound = true;
                 el.addEventListener('touchstart', start, { passive: true });
                 el.addEventListener('touchend', cancel);
                 el.addEventListener('touchmove', cancel);
                 el.addEventListener('touchcancel', cancel);
-            }
+            };
+            marker.off('add', marker._routeLpBindTouch);
+            marker._routeLpBindTouch = bindTouch;
+            marker.on('add', bindTouch);
+            bindTouch();
         }
 
         function enterRouteSelectionMode(fromCoords) {
@@ -667,7 +676,8 @@
             const dist = haversineMeters(fromCoords, toCoords);
             if (dist > ROUTE_MAX_METERS) {
                 clearRouteRings();
-                showRouteInfo('Це занадто далеко — пішохідний маршрут працює лише в радіусі 4 км 🚫', 3000);
+                showRouteInfo('Це занадто далеко — пішохідний маршрут працює лише в радіусі 4 км 🚫', 3500, true);
+                if (navigator.vibrate) navigator.vibrate([15, 60, 15]);
                 return;
             }
             addRoutePing(toCoords);
