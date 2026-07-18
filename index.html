@@ -148,16 +148,37 @@
         }
         .profile-editable[contenteditable="true"] { outline: 1px dashed var(--accent-main); border-radius: 8px; padding: 2px 4px; }
 
-        /* ---- Месенджер: список бесід і саме листування ---- */
+        /* ---- Месенджер: список бесід і саме листування (у стилі Telegram / Apple мінімалізм) ---- */
         #dm-list { display: none; flex-grow: 1; overflow-y: auto; touch-action: pan-y; }
-        .dm-row { display: flex; align-items: center; gap: 10px; padding: 9px 4px; cursor: pointer; border-bottom: 1px solid var(--border-minimal); }
-        .dm-avatar { width: 42px; height: 42px; border-radius: 50%; background-size: cover; background-position: center; flex-shrink: 0; background-color: #e5e5ea; }
+        .dm-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; cursor: pointer; border-bottom: 1px solid var(--border-minimal); transition: background-color 0.2s ease; }
+        .dm-row:active { background-color: rgba(0,0,0,0.03); }
+        body.dark-theme .dm-row:active { background-color: rgba(255,255,255,0.04); }
+        .dm-avatar { width: 46px; height: 46px; border-radius: 50%; background-size: cover; background-position: center; flex-shrink: 0; background-color: #e5e5ea; border: 1px solid var(--border-minimal); box-sizing: border-box; }
+        .dm-text-wrap { display: flex; flex-direction: column; overflow: hidden; flex-grow: 1; gap: 2px; }
         .dm-name { font-size: 14px; font-weight: 600; color: var(--text-color); }
+        .dm-preview { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .dm-empty { color: var(--text-secondary); font-size: 13px; text-align: center; margin-top: 24px; }
         #chat-thread-wrap { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
         #dm-back-row { display: none; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; flex-shrink: 0; }
         #dm-back-row span.arrow { font-size: 16px; color: var(--accent-main); }
         #dm-back-name { font-size: 13px; font-weight: 600; color: var(--text-color); }
+
+        /* ---- Режим "лише чати": кнопка Чат внизу відкриває одразу список бесід, без домашньої сторінки ---- */
+        #chats-header { display: none; align-items: center; justify-content: space-between; padding: 10px 4px 10px 6px; flex-shrink: 0; }
+        #chats-header span { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; color: var(--text-color); }
+        #chats-close-btn {
+            width: 28px; height: 28px; border-radius: 50%; background: transparent;
+            border: 1px solid var(--border-minimal); color: var(--icon-color); font-size: 13px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+            transition: var(--theme-transition);
+        }
+        #profile-sidebar.chat-mode .profile-hero,
+        #profile-sidebar.chat-mode .profile-name,
+        #profile-sidebar.chat-mode .profile-status,
+        #profile-sidebar.chat-mode .info-scroll-area,
+        #profile-sidebar.chat-mode #prof-btn { display: none !important; }
+        #profile-sidebar.chat-mode #prof-non-active-info { padding-top: 20px; flex-grow: 1; }
+        #profile-sidebar.chat-mode #chat-container { flex-grow: 1; border-top: none; padding-top: 0; }
 
         /* Решта твоїх незмінних стилів нижче для правильної роботи інтерфейсу */
         .action-btn:active, .chat-input-row button:active, .qr-close:active {
@@ -244,6 +265,78 @@
         .avatar-ring-inner { width: 100%; height: 100%; border-radius: 50%; background-size: cover; background-position: center; }
         .place-ring { width: 38px; height: 38px; border-radius: 50%; background: var(--ultramarine-gradient); padding: 1.2px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; transition: background 0.5s ease; }
         .place-icon-svg { width: 18px; height: 18px; fill: #ffffff; display: block; }
+
+        /* ---- Нижня панель: кнопка чату та фільтри шарів карти ---- */
+        #bottom-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translate3d(-50%, 0, 0);
+            z-index: 2500;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0 2px;
+            max-width: 94vw;
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        #bottom-bar::-webkit-scrollbar { display: none; }
+
+        /* Кожна кнопка — окремий прозорий кружок, як top-кнопки (моя сторінка / нічний режим) */
+        .bottom-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .bottom-btn:active .bottom-icon-wrap { transform: scale(0.92); }
+        .bottom-icon-wrap {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: transparent;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-minimal);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            box-sizing: border-box;
+            transition: var(--apple-transition), var(--theme-transition);
+        }
+        body.dark-theme .bottom-icon-wrap { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .bottom-btn svg {
+            width: 17px; height: 17px; fill: none; stroke: var(--icon-color);
+            stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+            transition: stroke 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .bottom-label {
+            font-size: 9px; font-weight: 600; color: var(--text-secondary);
+            white-space: nowrap; transition: var(--theme-transition);
+        }
+
+        /* Активний (увімкнений) шар підсвічується градієнтом всередині того самого кружка */
+        .layer-btn.active .bottom-icon-wrap { background: var(--ultramarine-gradient); border-color: transparent; box-shadow: 0 4px 12px rgba(69, 66, 244, 0.25); }
+        .layer-btn.active svg { stroke: #ffffff; }
+        .layer-btn.active .bottom-label { color: var(--accent-main); }
+        .layer-btn:not(.active) .bottom-icon-wrap { opacity: 0.45; }
+        .layer-btn:not(.active) .bottom-label { opacity: 0.45; }
+
+        /* Кнопка чату — той самий прозорий мінімалістичний кружок, лише акцентна іконка */
+        #chat-fab .bottom-icon-wrap { background: transparent; border: 1px solid var(--border-minimal); }
+        #chat-fab svg { stroke: var(--accent-main); }
+        #chat-fab .bottom-label { color: var(--accent-main); font-weight: 700; }
     </style>
 </head>
 <body>
@@ -272,6 +365,52 @@
         
         <div id="map"></div>
 
+        <!-- Нижня панель: кнопка чату (всі мої бесіди) + перемикачі шарів карти -->
+        <div id="bottom-bar">
+            <button class="bottom-btn" id="chat-fab" aria-label="Чат">
+                <span class="bottom-icon-wrap">
+                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </span>
+                <span class="bottom-label">Чат</span>
+            </button>
+            <button class="bottom-btn layer-btn active" data-layer="food" aria-label="Їжа">
+                <span class="bottom-icon-wrap">
+                    <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.86 3.77 3.97L6.25 22h3.5l-.52-8.03C11.34 12.86 13 11.12 13 9V2h-2v7zm8-7c-1.3 0-2.42.84-2.83 2.02l-3.34 9.47C12.5 14.4 13.06 15 14 15h1v7h2v-7h1a3 3 0 0 0 3-3V2h-2z"></path></svg>
+                </span>
+                <span class="bottom-label">Їжа</span>
+            </button>
+            <button class="bottom-btn layer-btn active" data-layer="events" aria-label="Події">
+                <span class="bottom-icon-wrap">
+                    <svg viewBox="0 0 24 24"><path d="M8 2v3M16 2v3M3.5 9h17"></path><rect x="3.5" y="4.5" width="17" height="16" rx="2"></rect></svg>
+                </span>
+                <span class="bottom-label">Події</span>
+            </button>
+            <button class="bottom-btn layer-btn active" data-layer="shopping" aria-label="Покупки">
+                <span class="bottom-icon-wrap">
+                    <svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                </span>
+                <span class="bottom-label">Покупки</span>
+            </button>
+            <button class="bottom-btn layer-btn active" data-layer="services" aria-label="Послуги">
+                <span class="bottom-icon-wrap">
+                    <svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4.6 17.4a1.5 1.5 0 0 0 2.1 2.1L12.4 14a4 4 0 0 1 5.4-5.4l-2.1 2.1-2-2z"></path></svg>
+                </span>
+                <span class="bottom-label">Послуги</span>
+            </button>
+            <button class="bottom-btn layer-btn active" data-layer="people" aria-label="Люди">
+                <span class="bottom-icon-wrap">
+                    <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"></circle><path d="M2 21c0-3.3 3.1-6 7-6s7 2.7 7 6"></path><circle cx="17" cy="8" r="2.3"></circle><path d="M15 13.5c2.8.4 5 2.4 5 4.9"></path></svg>
+                </span>
+                <span class="bottom-label">Люди</span>
+            </button>
+            <button class="bottom-btn layer-btn active" data-layer="friends" aria-label="Друзі">
+                <span class="bottom-icon-wrap">
+                    <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5 5 0 0 0-7.1 0L12 6.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 20.4l8.8-8.7a5 5 0 0 0 0-7.1z"></path></svg>
+                </span>
+                <span class="bottom-label">Друзі</span>
+            </button>
+        </div>
+
         <!-- Решта HTML-структури (profile-sidebar, купони, галереї) залишається повністю без змін -->
         <div id="profile-sidebar">
             <div class="drag-handle"></div>
@@ -297,6 +436,7 @@
                 </div>
 
                 <div id="chat-container">
+                    <div id="chats-header"><span>Чати</span><button id="chats-close-btn" aria-label="Закрити">✕</button></div>
                     <div id="dm-list"></div>
                     <div id="chat-thread-wrap">
                         <div id="dm-back-row"><span class="arrow">←</span><span id="dm-back-name"></span></div>
@@ -352,6 +492,43 @@
             tap: false
         }).setView([49.8415, 24.0315], 15);
 
+        // Шари карти для кнопок-фільтрів знизу: кожна категорія — свій layerGroup, який можна вмикати/вимикати окремо
+        const layerGroups = {
+            food: L.layerGroup().addTo(map),
+            events: L.layerGroup().addTo(map),
+            shopping: L.layerGroup().addTo(map),
+            services: L.layerGroup().addTo(map),
+            people: L.layerGroup().addTo(map),
+            friends: L.layerGroup().addTo(map)
+        };
+
+        document.querySelectorAll('.layer-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const group = layerGroups[btn.dataset.layer];
+                if (!group) return;
+                if (map.hasLayer(group)) { map.removeLayer(group); btn.classList.remove('active'); }
+                else { map.addLayer(group); btn.classList.add('active'); }
+            });
+        });
+
+        document.getElementById('chat-fab').addEventListener('click', openChatsList);
+        document.getElementById('chats-close-btn').addEventListener('click', () => window.closeProfile());
+
+        // Відкриває одразу поле з чатами (список бесід, як в Telegram), без домашньої сторінки профілю
+        function openChatsList() {
+            currentActiveItem = getMyProfileItem();
+            if (currentChatRef) { off(currentChatRef); document.getElementById('chat-messages').innerHTML = ''; }
+            if (isEditingProfile) exitEditMode(false);
+            document.getElementById('prof-edit-btn').style.display = 'none';
+            document.getElementById('prof-add-photo-btn').style.display = 'none';
+            document.getElementById('chat-container').style.display = 'flex';
+            const sidebar = document.getElementById('profile-sidebar');
+            sidebar.classList.add('chat-mode');
+            sidebar.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+            sidebar.classList.add('active');
+            showDmList();
+        }
+
         const lightTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' });
         const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' });
         lightTiles.addTo(map);
@@ -389,31 +566,36 @@
         localStorage.setItem('chat_username', myName);
 
         const people = [
-            { id: 'p1', type: 'person', name: "Марта, 22", coords: [49.8425, 24.0320], photos: ["https://xsgames.co/randomusers/assets/avatars/female/1.jpg", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500"], status: "П'ю матчу, ходімо гуляти! ☕", about: "Студентка академії мистецтв.", interests: "Мистецтво, кава, design" },
-            { id: 'p2', type: 'person', name: "Влад, 26", coords: [49.8445, 24.0260], photos: ["https://xsgames.co/randomusers/assets/avatars/male/2.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500"], status: "Шукаю компанію на вечірній велозаїзд 🚴‍♂️", about: "Розробник, люблю швидкість.", interests: "Вело, IT, подорожі" },
-            { id: 'p3', type: 'person', name: "Олег (Репетитор)", coords: [49.8390, 24.0350], photos: ["https://xsgames.co/randomusers/assets/avatars/male/3.jpg", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500"], status: "Пропоную послуги розмовної англійської 🇬🇧", about: "Вчитель з досвідом 5 років. Проводжу заняття в кав'ярнях або онлайн.", interests: "Англійська, Коучинг, Лекції" },
-            { id: 'p4', type: 'person', name: "Діана, 21", coords: [49.8410, 24.0220], photos: ["https://xsgames.co/randomusers/assets/avatars/female/4.jpg", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500"], status: "Я на концерті біля Опери! Хто тут? 🎶", about: "Обожнюю живу музику і фестивалі.", interests: "Рок, Концерти, Нічне місто" },
-            { id: 'p5', type: 'person', name: "Катя (Фотограф)", coords: [49.8460, 24.0310], photos: ["https://xsgames.co/randomusers/assets/avatars/female/5.jpg", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=500", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=500"], status: "Роблю експрес-фотосесії у парку 📸", about: "Година зйомки — 3 готові фото вже ввечері. Пишіть!", interests: "Фотографія, Портрети, Стиль" },
-            { id: 'p6', type: 'person', name: "Макс, 29", coords: [49.8350, 24.0290], photos: ["https://xsgames.co/randomusers/assets/avatars/male/6.jpg", "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500"], status: "Хто грати в настілки у Стрийському? 🎲", about: "Збираю компанію на Колонізаторів.", interests: "Настільні ігри, Стратегії, Пікніки" },
-            { id: 'p7', type: 'person', name: "Яна, 25", coords: [49.8370, 24.0180], photos: ["https://xsgames.co/randomusers/assets/avatars/female/7.jpg", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500", "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=500"], status: "Шукаю з ким побігати зранку 🏃‍♀️", about: "Старт о 7:30 від парку Франка.", interests: "Біг, ЗСЖ, Кардіо" },
-            { id: 'p8', type: 'person', name: "Тарас (Ремонт)", coords: [49.8450, 24.0380], photos: ["https://xsgames.co/randomusers/assets/avatars/male/8.jpg", "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=500", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500"], status: "Лагоджу ноути та телефони 💻", about: "Швидка діагностика. Заберу та привезу техніку сам.", interests: "Електроніка, Ремонт, Гаджети" },
-            { id: 'p9', type: 'person', name: "Іра, 23", coords: [49.8330, 24.0330], photos: ["https://xsgames.co/randomusers/assets/avatars/female/9.jpg", "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=500", "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500"], status: "Йдемо на виставку в Палац Потоцьких? 🏛️", about: "Цікавлюсь історією та архітектурою.", interests: "Музеї, Історія, Книги" },
-            { id: 'p10', type: 'person', name: "Артур, 27", coords: [49.8400, 24.0270], photos: ["https://xsgames.co/randomusers/assets/avatars/male/10.jpg", "https://images.unsplash.com/photo-1489980508314-941910ded1f4?w=500", "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=500"], status: "Тестую кав'ярні міста. Хто зі мною? ☕", about: "Кавовий сомельє на мінімалках.", interests: "Еспресо, Капінг, Фільтр" }
+            { id: 'p1', type: 'person', name: "Марта, 22", coords: [49.8425, 24.0320], photos: ["https://xsgames.co/randomusers/assets/avatars/female/1.jpg", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500"], status: "П'ю матчу, ходімо гуляти! ☕", about: "Студентка академії мистецтв.", interests: "Мистецтво, кава, design", category: 'people' },
+            { id: 'p2', type: 'person', name: "Влад, 26", coords: [49.8445, 24.0260], photos: ["https://xsgames.co/randomusers/assets/avatars/male/2.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500"], status: "Шукаю компанію на вечірній велозаїзд 🚴‍♂️", about: "Розробник, люблю швидкість.", interests: "Вело, IT, подорожі", category: 'people' },
+            { id: 'p3', type: 'person', name: "Олег (Репетитор)", coords: [49.8390, 24.0350], photos: ["https://xsgames.co/randomusers/assets/avatars/male/3.jpg", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500"], status: "Пропоную послуги розмовної англійської 🇬🇧", about: "Вчитель з досвідом 5 років. Проводжу заняття в кав'ярнях або онлайн.", interests: "Англійська, Коучинг, Лекції", category: 'services' },
+            { id: 'p4', type: 'person', name: "Діана, 21", coords: [49.8410, 24.0220], photos: ["https://xsgames.co/randomusers/assets/avatars/female/4.jpg", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500"], status: "Я на концерті біля Опери! Хто тут? 🎶", about: "Обожнюю живу музику і фестивалі.", interests: "Рок, Концерти, Нічне місто", category: 'events' },
+            { id: 'p5', type: 'person', name: "Катя (Фотограф)", coords: [49.8460, 24.0310], photos: ["https://xsgames.co/randomusers/assets/avatars/female/5.jpg", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=500", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=500"], status: "Роблю експрес-фотосесії у парку 📸", about: "Година зйомки — 3 готові фото вже ввечері. Пишіть!", interests: "Фотографія, Портрети, Стиль", category: 'services' },
+            { id: 'p6', type: 'person', name: "Макс, 29", coords: [49.8350, 24.0290], photos: ["https://xsgames.co/randomusers/assets/avatars/male/6.jpg", "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500"], status: "Хто грати в настілки у Стрийському? 🎲", about: "Збираю компанію на Колонізаторів.", interests: "Настільні ігри, Стратегії, Пікніки", category: 'people' },
+            { id: 'p7', type: 'person', name: "Яна, 25", coords: [49.8370, 24.0180], photos: ["https://xsgames.co/randomusers/assets/avatars/female/7.jpg", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500", "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=500"], status: "Шукаю з ким побігати зранку 🏃‍♀️", about: "Старт о 7:30 від парку Франка.", interests: "Біг, ЗСЖ, Кардіо", category: 'people' },
+            { id: 'p8', type: 'person', name: "Тарас (Ремонт)", coords: [49.8450, 24.0380], photos: ["https://xsgames.co/randomusers/assets/avatars/male/8.jpg", "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=500", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500"], status: "Лагоджу ноути та телефони 💻", about: "Швидка діагностика. Заберу та привезу техніку сам.", interests: "Електроніка, Ремонт, Гаджети", category: 'services' },
+            { id: 'p9', type: 'person', name: "Іра, 23", coords: [49.8330, 24.0330], photos: ["https://xsgames.co/randomusers/assets/avatars/female/9.jpg", "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=500", "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500"], status: "Йдемо на виставку в Палац Потоцьких? 🏛️", about: "Цікавлюсь історією та архітектурою.", interests: "Музеї, Історія, Книги", category: 'events' },
+            { id: 'p10', type: 'person', name: "Артур, 27", coords: [49.8400, 24.0270], photos: ["https://xsgames.co/randomusers/assets/avatars/male/10.jpg", "https://images.unsplash.com/photo-1489980508314-941910ded1f4?w=500", "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=500"], status: "Тестую кав'ярні міста. Хто зі мною? ☕", about: "Кавовий сомельє на мінімалках.", interests: "Еспресо, Капінг, Фільтр", category: 'people' }
         ];
 
         const svgIcons = {
             food: `<svg class="place-icon-svg" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.86 3.77 3.97L6.25 22h3.5l-.52-8.03C11.34 12.86 13 11.12 13 9V2h-2v7zm8-7c-1.3 0-2.42.84-2.83 2.02l-3.34 9.47C12.5 14.4 13.06 15 14 15h1v7h2v-7h1a3 3 0 0 0 3-3V2h-2z"/></svg>`,
             coffee: `<svg class="place-icon-svg" viewBox="0 0 24 24"><path d="M4 19h16v2H4zm14-9h-2V5h2zm2-2V3H2v7c0 2.76 2.24 5 5 5h6c2.76 0 5-2.24 5-5h2c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>`,
             beer: `<svg class="place-icon-svg" viewBox="0 0 24 24"><path d="M4 2h13a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm13 2H6v3h11V4zm-2 5H6v10h9V9z"/></svg>`,
-            fire: `<svg class="place-icon-svg" viewBox="0 0 24 24"><path d="M12 23a7.5 7.5 0 0 0 7.5-7.5c0-4.14-3.36-7.5-7.5-12.5C7.86 8 4.5 11.36 4.5 15.5A7.5 7.5 0 0 0 12 23zm-1-17.06c.34-.41.69-.83 1-1.25.31.42.66.84 1 1.25A11.35 11.35 0 0 1 15.42 11H8.58A11.35 11.35 0 0 1 11 5.94z"/></svg>`
+            fire: `<svg class="place-icon-svg" viewBox="0 0 24 24"><path d="M12 23a7.5 7.5 0 0 0 7.5-7.5c0-4.14-3.36-7.5-7.5-12.5C7.86 8 4.5 11.36 4.5 15.5A7.5 7.5 0 0 0 12 23zm-1-17.06c.34-.41.69-.83 1-1.25.31.42.66.84 1 1.25A11.35 11.35 0 0 1 15.42 11H8.58A11.35 11.35 0 0 1 11 5.94z"/></svg>`,
+            bag: `<svg class="place-icon-svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`,
+            ticket: `<svg class="place-icon-svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3M16 2v3M3.5 9h17"/><rect x="3.5" y="4.5" width="17" height="16" rx="2"/></svg>`
         };
 
         const places = [
-            { id: 'c1', type: 'place', name: "Ресторація Бачевських", coords: [49.8430, 24.0305], photos: ["https://picsum.photos/id/429/600/400", "https://picsum.photos/id/431/600/400", "https://picsum.photos/id/433/600/400"], status: "Нова галицька кухня 🥂", text1: "вул. Шевська, 8. Справжній дух старого Львова.", text2: "Знижка 15% на фірмові наливки.", svg: svgIcons.food },
-            { id: 'c2', type: 'place', name: "Львівська копальня кави", coords: [49.8412, 24.0326], photos: ["https://picsum.photos/id/1060/600/400", "https://picsum.photos/id/1069/600/400", "https://picsum.photos/id/1071/600/400"], status: "Видобуваємо каву тут! ⛏️", text1: "пл. Ринок, 10. Єдина у світі кавова шахта.", text2: "Знижка 10% на будь-яку каву в зернах.", svg: svgIcons.coffee },
-            { id: 'c3', type: 'place', name: "Театр пива «Правда»", coords: [49.8418, 24.0318], photos: ["https://picsum.photos/id/152/600/400", "https://picsum.photos/id/159/600/400", "https://picsum.photos/id/180/600/400"], status: "Крафтове пиво та оркестр 🎺", text1: "пл. Ринок, 32. Власна броварня та жива музика.", text2: "Безкоштовний дегустаційний сет пива.", svg: svgIcons.beer },
-            { id: 'c4', type: 'place', name: "Криївка", coords: [49.8411, 24.0321], photos: ["https://picsum.photos/id/292/600/400", "https://picsum.photos/id/293/600/400", "https://picsum.photos/id/294/600/400"], status: "Найвідвідуваніший ресторан Європи 🪖", text1: "пл. Ринок, 14. Скажи гасло «Героям Слава» на вході.", text2: "Полумисок фірмових вареників зі знижкою 20%.", svg: svgIcons.food },
-            { id: 'c5', type: 'place', name: "Мазох-café", coords: [49.8416, 24.0335], photos: ["https://picsum.photos/id/635/600/400", "https://picsum.photos/id/634/600/400", "https://picsum.photos/id/631/600/400"], status: "Атмосфера пристрасті та болю 🔥", text1: "вул. Сербська, 7. Унікальне тематичне кафе.", text2: "Екстремальний коктейль у подарунок при чеку від 500 грн.", svg: svgIcons.fire }
+            { id: 'c1', type: 'place', name: "Ресторація Бачевських", coords: [49.8430, 24.0305], photos: ["https://picsum.photos/id/429/600/400", "https://picsum.photos/id/431/600/400", "https://picsum.photos/id/433/600/400"], status: "Нова галицька кухня 🥂", text1: "вул. Шевська, 8. Справжній дух старого Львова.", text2: "Знижка 15% на фірмові наливки.", svg: svgIcons.food, category: 'food' },
+            { id: 'c2', type: 'place', name: "Львівська копальня кави", coords: [49.8412, 24.0326], photos: ["https://picsum.photos/id/1060/600/400", "https://picsum.photos/id/1069/600/400", "https://picsum.photos/id/1071/600/400"], status: "Видобуваємо каву тут! ⛏️", text1: "пл. Ринок, 10. Єдина у світі кавова шахта.", text2: "Знижка 10% на будь-яку каву в зернах.", svg: svgIcons.coffee, category: 'food' },
+            { id: 'c3', type: 'place', name: "Театр пива «Правда»", coords: [49.8418, 24.0318], photos: ["https://picsum.photos/id/152/600/400", "https://picsum.photos/id/159/600/400", "https://picsum.photos/id/180/600/400"], status: "Крафтове пиво та оркестр 🎺", text1: "пл. Ринок, 32. Власна броварня та жива музика.", text2: "Безкоштовний дегустаційний сет пива.", svg: svgIcons.beer, category: 'food' },
+            { id: 'c4', type: 'place', name: "Криївка", coords: [49.8411, 24.0321], photos: ["https://picsum.photos/id/292/600/400", "https://picsum.photos/id/293/600/400", "https://picsum.photos/id/294/600/400"], status: "Найвідвідуваніший ресторан Європи 🪖", text1: "пл. Ринок, 14. Скажи гасло «Героям Слава» на вході.", text2: "Полумисок фірмових вареників зі знижкою 20%.", svg: svgIcons.food, category: 'food' },
+            { id: 'c5', type: 'place', name: "Мазох-café", coords: [49.8416, 24.0335], photos: ["https://picsum.photos/id/635/600/400", "https://picsum.photos/id/634/600/400", "https://picsum.photos/id/631/600/400"], status: "Атмосфера пристрасті та болю 🔥", text1: "вул. Сербська, 7. Унікальне тематичне кафе.", text2: "Екстремальний коктейль у подарунок при чеку від 500 грн.", svg: svgIcons.fire, category: 'food' },
+            { id: 'c6', type: 'place', name: "Крамниця українських дизайнерів", coords: [49.8420, 24.0300], photos: ["https://picsum.photos/id/26/600/400", "https://picsum.photos/id/28/600/400", "https://picsum.photos/id/30/600/400"], status: "Місцевий одяг та аксесуари 🛍️", text1: "пл. Ринок, 5. Речі від львівських брендів.", text2: "Знижка 10% на весь асортимент.", svg: svgIcons.bag, category: 'shopping' },
+            { id: 'c7', type: 'place', name: "Вернісаж (сувеніри)", coords: [49.8402, 24.0325], photos: ["https://picsum.photos/id/48/600/400", "https://picsum.photos/id/55/600/400", "https://picsum.photos/id/60/600/400"], status: "Ринок картин та сувенірів 🎨", text1: "просп. Шевченка. Вироби місцевих митців.", text2: "Знижка 5% при покупці від 2 виробів.", svg: svgIcons.bag, category: 'shopping' },
+            { id: 'c8', type: 'place', name: "Львівська опера", coords: [49.8408, 24.0225], photos: ["https://picsum.photos/id/1015/600/400", "https://picsum.photos/id/1016/600/400", "https://picsum.photos/id/1018/600/400"], status: "Вечірня вистава сьогодні 🎭", text1: "пр. Свободи, 28. Оперний театр ім. Соломії Крушельницької.", text2: "Знижка 10% на квитки при показі купона.", svg: svgIcons.ticket, category: 'events' }
         ];
 
         let currentActiveItem = null; let currentChatRef = null; let activePhotoIndex = 0;
@@ -424,7 +606,8 @@
                 html: `<div class="avatar-ring"><div class="avatar-ring-inner" style="background-image: url('${person.photos[0]}')"></div></div>`,
                 iconSize: [38, 38], iconAnchor: [19, 19]
             });
-            L.marker(person.coords, { icon: customIcon }).addTo(map).on('click', (e) => { L.DomEvent.stopPropagation(e); showSidebar(person); });
+            const targetGroup = layerGroups[person.category] || layerGroups.people;
+            L.marker(person.coords, { icon: customIcon }).addTo(targetGroup).on('click', (e) => { L.DomEvent.stopPropagation(e); showSidebar(person); });
         });
 
         places.forEach(place => {
@@ -433,7 +616,8 @@
                 html: `<div class="place-ring">${place.svg}</div>`,
                 iconSize: [38, 38], iconAnchor: [19, 19]
             });
-            L.marker(place.coords, { icon: customIcon }).addTo(map).on('click', (e) => { L.DomEvent.stopPropagation(e); showSidebar(place); });
+            const targetGroup = layerGroups[place.category] || layerGroups.food;
+            L.marker(place.coords, { icon: customIcon }).addTo(targetGroup).on('click', (e) => { L.DomEvent.stopPropagation(e); showSidebar(place); });
         });
 
         function showSidebar(item) {
@@ -484,7 +668,7 @@
         window.closeProfile = function() {
             const sidebar = document.getElementById('profile-sidebar');
             sidebar.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
-            sidebar.classList.remove('active'); sidebar.style.transform = ''; 
+            sidebar.classList.remove('active'); sidebar.classList.remove('chat-mode'); sidebar.style.transform = ''; 
             if (currentChatRef) off(currentChatRef); currentActiveItem = null;
             currentChatPath = null; currentChatOtherId = null;
             if (isEditingProfile) exitEditMode(true);
@@ -588,8 +772,8 @@
             input.value = '';
             if (currentChatOtherId) {
                 // Оновлюємо список бесід месенджера з обох боків, щоб розмова з'явилась у нас і у співрозмовника
-                set(ref(db, `userConvos/${myId}/${currentChatOtherId}`), { name: currentChatOtherName || 'Гість', photo: currentChatOtherPhoto || '', ts: Date.now() });
-                set(ref(db, `userConvos/${currentChatOtherId}/${myId}`), { name: (myProfile && myProfile.name) || myName, photo: (myProfile && myProfile.photos && myProfile.photos[0]) || '', ts: Date.now() });
+                set(ref(db, `userConvos/${myId}/${currentChatOtherId}`), { name: currentChatOtherName || 'Гість', photo: currentChatOtherPhoto || '', ts: Date.now(), lastMsg: text, lastMine: true });
+                set(ref(db, `userConvos/${currentChatOtherId}/${myId}`), { name: (myProfile && myProfile.name) || myName, photo: (myProfile && myProfile.photos && myProfile.photos[0]) || '', ts: Date.now(), lastMsg: text, lastMine: false });
             }
         }
         document.getElementById('chat-send-btn').addEventListener('click', sendMessage);
@@ -716,6 +900,8 @@
         function showDmList() {
             document.getElementById('chat-thread-wrap').style.display = 'none';
             document.getElementById('dm-list').style.display = 'block';
+            const sidebar = document.getElementById('profile-sidebar');
+            document.getElementById('chats-header').style.display = sidebar.classList.contains('chat-mode') ? 'flex' : 'none';
             if (currentChatRef) { off(currentChatRef); currentChatRef = null; }
             currentChatPath = null; currentChatOtherId = null;
             renderDmList();
@@ -733,8 +919,12 @@
                 const row = document.createElement('div'); row.className = 'dm-row';
                 const avatar = document.createElement('div'); avatar.className = 'dm-avatar';
                 avatar.style.backgroundImage = `url('${c.photo || "https://xsgames.co/randomusers/assets/avatars/male/11.jpg"}')`;
+                const textWrap = document.createElement('div'); textWrap.className = 'dm-text-wrap';
                 const nameSpan = document.createElement('span'); nameSpan.className = 'dm-name'; nameSpan.innerText = c.name || 'Гість';
-                row.appendChild(avatar); row.appendChild(nameSpan);
+                const previewSpan = document.createElement('span'); previewSpan.className = 'dm-preview';
+                previewSpan.innerText = c.lastMsg ? (c.lastMine ? 'Ви: ' + c.lastMsg : c.lastMsg) : 'Немає повідомлень';
+                textWrap.appendChild(nameSpan); textWrap.appendChild(previewSpan);
+                row.appendChild(avatar); row.appendChild(textWrap);
                 row.addEventListener('click', () => openDmThread(c.id, c.name, c.photo));
                 box.appendChild(row);
             });
@@ -742,6 +932,7 @@
 
         function openDmThread(otherId, otherName, otherPhoto) {
             document.getElementById('dm-list').style.display = 'none';
+            document.getElementById('chats-header').style.display = 'none';
             document.getElementById('chat-thread-wrap').style.display = 'flex';
             document.getElementById('dm-back-row').style.display = 'flex';
             document.getElementById('dm-back-name').innerText = otherName || 'Гість';
@@ -766,13 +957,13 @@
                 const photos = (p.photos && p.photos.length) ? p.photos : ["https://xsgames.co/randomusers/assets/avatars/male/11.jpg"];
                 const personObj = { id: id, type: 'person', name: p.name || 'Гість', coords: p.coords, photos: photos, status: p.status || '', about: p.about || '', interests: p.interests || '' };
 
-                if (profileMarkers[id]) { map.removeLayer(profileMarkers[id]); }
+                if (profileMarkers[id]) { layerGroups.friends.removeLayer(profileMarkers[id]); }
                 const customIcon = L.divIcon({
                     className: 'custom-avatar-marker',
                     html: `<div class="avatar-ring"><div class="avatar-ring-inner" style="background-image: url('${photos[0]}')"></div></div>`,
                     iconSize: [38, 38], iconAnchor: [19, 19]
                 });
-                profileMarkers[id] = L.marker(p.coords, { icon: customIcon }).addTo(map).on('click', (e) => {
+                profileMarkers[id] = L.marker(p.coords, { icon: customIcon }).addTo(layerGroups.friends).on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
                     if (id === myId) { showSidebar(getMyProfileItem()); } else { showSidebar(personObj); }
                 });
